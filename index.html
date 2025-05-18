@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer Brain Boost 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom colors from the poster */
+        :root {
+            --color-primary-orange: #F97316; /* Adjusted for better web vibrancy */
+            --color-dark-teal: #0D9488;    /* Adjusted for better web vibrancy */
+            --color-accent-yellow: #FACC15;
+            --color-light-bg: #F3F4F6;
+            --color-dark-text: #1F2937;
+            --color-light-text: #FFFFFF;
+        }
+        .bg-primary-orange { background-color: var(--color-primary-orange); }
+        .text-primary-orange { color: var(--color-primary-orange); }
+        .bg-dark-teal { background-color: var(--color-dark-teal); }
+        .text-dark-teal { color: var(--color-dark-teal); }
+        .bg-accent-yellow { background-color: var(--color-accent-yellow); }
+        .text-accent-yellow { color: var(--color-accent-yellow); }
+        .bg-light-bg { background-color: var(--color-light-bg); }
+        .text-dark-text { color: var(--color-dark-text); }
+        .text-light-text { color: var(--color-light-text); }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Custom gradient for hero (optional, can be simpler) */
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--color-primary-orange) 0%, var(--color-accent-yellow) 100%);
+        }
+        .section-title {
+            font-weight: 900; /* Extra bold for titles like on poster */
+            text-align: center;
+            margin-bottom: 2rem; /* Spacing below titles */
+        }
+        .card-hover {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Ensure icons are vertically aligned with text */
+        .icon-text-align svg, .icon-text-align .fa { /* Updated to include Font Awesome */
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+        /* Responsive iframe for map */
+        .responsive-iframe-container {
+            position: relative;
+            overflow: hidden;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        }
+        .responsive-iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .btn-register { /* New style for registration button */
+            background-color: #34A853; /* Google Forms green */
+            color: white;
+        }
+        .btn-register:hover {
+            background-color: #2c8c42;
+        }
+    </style>
+</head>
+<body class="bg-light-bg text-dark-text">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-primary-orange">Summer Brain Boost</a>
+            <div class="space-x-4">
+                <a href="#home" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                <a href="#courses" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Courses</a>
+                <a href="#approach" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Approach</a>
+                <a href="#contact" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Contact & Register</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero-gradient text-light-text py-20 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-5xl md:text-7xl font-black mb-4 leading-tight">SUMMER BRAIN BOOST</h1>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">2025</h2>
+                <p class="text-xl md:text-2xl mb-6">Level up your skills this summer! (Online Sessions Available)</p>
+                <p class="text-lg md:text-xl mb-10">Let this summer be a season of growth, discovery, and intellectual mastery! 🌟</p>
+                <a href="#courses" class="bg-white text-primary-orange font-bold py-3 px-8 rounded-lg text-lg hover:bg-gray-100 transition duration-300 shadow-lg mr-2 mb-2 md:mb-0 inline-block">Explore Our Courses</a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdf8hNSRmFNlmgQAaioIBXesKm1GoZrxXGG_F38MyXId7PCxw/viewform" target="_blank" class="btn-register font-bold py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg inline-block">
+                    <i class="fas fa-edit mr-2"></i>Register for Info Session
+                </a>
+            </div>
+        </section>
+
+        <section id="courses" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl section-title text-dark-teal">Our Engaging Programs</h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-dark-teal text-light-text p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 14h.01M12 11h.01M15 11h.01M12 7.01V7M15 7.01V7M9 7.01V7m5.012 4.012L12 12m2.012-2.012L12 12m0 0L9.988 9.988M12 12l2.012 2.012M12 12L9.988 14.012M3.055 11H5a7 7 0 0114 0h1.945M4 17h16"></path></svg>
+                        <h3 class="text-2xl font-bold mb-3">Mental Math Challenges</h3>
+                        <p class="text-sm"> practice quick calculations to refine your speed and accuracy.</p>
+                    </div>
+                    <div class="bg-primary-orange text-light-text p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
+                         <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.921 0M12 17.747a8.485 8.485 0 01-11.921 0M12 17.747l-.09-.087a8.454 8.454 0 01-4.838-7.038 8.458 8.458 0 014.928-7.007M12 17.747l.09-.087a8.454 8.454 0 004.838-7.038 8.458 8.458 0 00-4.928-7.007"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M19 3v4M2 12h20"></path></svg>
+                        <h3 class="text-2xl font-bold mb-3">Speed Reading & Comprehension</h3>
+                        <p class="text-sm">Engage with literature, set reading goals, and practice summarizing texts to improve retention.</p>
+                    </div>
+                    <div class="bg-dark-teal text-light-text p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        <h3 class="text-2xl font-bold mb-3">Creative Writing & Poetry</h3>
+                        <p class="text-sm">Express yourself through storytelling and poetry, refining your vocabulary and linguistic creativity.</p>
+                    </div>
+                    <div class="bg-primary-orange text-light-text p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
+                         <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM10 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"></path></svg>
+                        <h3 class="text-2xl font-bold mb-3">Word Games & Language Quizzes</h3>
+                        <p class="text-sm">Expand your vocabulary with crosswords, word association games, and bilingual challenges.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="approach" class="py-16 md:py-24 bg-light-bg">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl section-title text-primary-orange">Daily Practice & Reflection</h2>
+                <p class="text-center text-lg text-gray-700 mb-12 max-w-3xl mx-auto">
+                    🌞 Unlock Your Potential This Summer! 📖➗ Make this summer count by strengthening your calculation speed and mastery of language! Whether you're aiming to boost your academic prowess or simply enhance your cognitive agility, our program emphasizes daily engagement and thoughtful reflection. Keep a journal, track progress, and celebrate achievements while maintaining consistency.
+                </p>
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-6">
+                        <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
+                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                 <h3 class="text-xl font-semibold text-dark-teal mb-1">Track Your Progress</h3>
+                                <p class="text-gray-600">Monitor your improvements and see your skills grow week by week with our structured feedback and progress tracking. Celebrate your achievements along the way!</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
+                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-xl font-semibold text-dark-teal mb-1">Maintain Consistency</h3>
+                                <p class="text-gray-600">Develop strong learning habits through daily exercises and activities. Keeping a journal can help reflect on your journey and maintain focus.</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
+                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <div>
+                                <h3 class="text-xl font-semibold text-dark-teal mb-1">Expert Guidance</h3>
+                                <p class="text-gray-600">Learn from experienced instructors dedicated to your success and passionate about education, guiding your daily practice and reflection.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 md:mt-0">
+                        <img src="https://placehold.co/600x400/F97316/FFFFFF?text=Interactive+Learning" alt="Students learning and reflecting" class="rounded-lg shadow-xl w-full h-auto object-cover">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl section-title text-dark-teal">Contact & Register</h2>
+                <div class="max-w-3xl mx-auto bg-light-bg p-8 md:p-12 rounded-xl shadow-2xl">
+                    <p class="text-center text-lg text-gray-700 mb-8">
+                        Have questions or ready to join our Summer Brain Boost? Contact Rashmi Sinha directly or use the form below for inquiries. To register for an info session or the program, please click the registration button.
+                    </p>
+                    <div class="text-center space-y-6 mb-10">
+                        <div class="icon-text-align">
+                            <svg class="w-6 h-6 text-primary-orange inline-block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                            <a href="tel:8368736670" class="text-xl text-gray-800 hover:text-primary-orange font-semibold">8368736670</a>
+                        </div>
+                        <div class="icon-text-align">
+                            <svg class="w-6 h-6 text-primary-orange inline-block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+                            <a href="mailto:sinha.rs78@gmail.com" class="text-xl text-gray-800 hover:text-primary-orange font-semibold">sinharas78@gmail.com</a>
+                        </div>
+                        <p class="text-lg text-gray-700 font-semibold">Program Coordinator: Rashmi Sinha</p>
+                        <div>
+                             <a href="https://docs.google.com/forms/d/e/1FAIpQLSdf8hNSRmFNlmgQAaioIBXesKm1GoZrxXGG_F38MyXId7PCxw/viewform" target="_blank" 
+                               class="inline-flex items-center justify-center px-6 py-3 mt-4 border border-transparent rounded-md shadow-sm text-base font-medium btn-register hover:bg-green-700 transition duration-300">
+                                <i class="fas fa-edit mr-2"></i> Register Here (Google Form)
+                            </a>
+                            <p class="text-xs text-gray-500 mt-2">(Click to open the registration form)</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-2xl font-semibold text-dark-text text-center mb-6">Or Send Us an Inquiry</h3>
+                    <form action="#" method="POST" class="space-y-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" name="name" id="name" autocomplete="name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-orange focus:border-primary-orange sm:text-sm" placeholder="Your Name">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" name="email" id="email" autocomplete="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-orange focus:border-primary-orange sm:text-sm" placeholder="you@example.com">
+                        </div>
+                        <div>
+                            <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
+                            <textarea id="message" name="message" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-orange focus:border-primary-orange sm:text-sm" placeholder="Your inquiry..."></textarea>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-orange hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-orange transition duration-300">
+                                Send Inquiry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark-teal text-light-text py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Summer Brain Boost. All rights reserved.</p>
+            <p class="text-sm mt-1">Designed to help you shine!</p>
+        </div>
+    </footer>
+
+</body>
+</html>
