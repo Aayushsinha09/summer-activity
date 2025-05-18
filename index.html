@@ -6,19 +6,22 @@
     <title>Summer Brain Boost 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            scroll-padding-top: 60px; /* Offset for sticky header */
         }
-        /* Custom colors from the poster */
+        /* Custom colors */
         :root {
-            --color-primary-orange: #F97316; /* Adjusted for better web vibrancy */
-            --color-dark-teal: #0D9488;     /* Adjusted for better web vibrancy */
+            --color-primary-orange: #F97316;
+            --color-dark-teal: #0D9488; 
             --color-accent-yellow: #FACC15;
             --color-light-bg: #F3F4F6;
             --color-dark-text: #1F2937;
             --color-light-text: #FFFFFF;
+            --color-hot-red: #EF4444; 
+            --color-testimonial-bg: #E0F2F1; /* A light teal for testimonials */
         }
         .bg-primary-orange { background-color: var(--color-primary-orange); }
         .text-primary-orange { color: var(--color-primary-orange); }
@@ -29,19 +32,20 @@
         .bg-light-bg { background-color: var(--color-light-bg); }
         .text-dark-text { color: var(--color-dark-text); }
         .text-light-text { color: var(--color-light-text); }
+        .bg-hot-red { background-color: var(--color-hot-red); }
+        .text-hot-red { color: var(--color-hot-red); }
+        .bg-testimonial-bg { background-color: var(--color-testimonial-bg); }
 
-        /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
         }
-        /* Custom gradient for hero */
         .hero-gradient {
             background: linear-gradient(135deg, var(--color-primary-orange) 0%, var(--color-accent-yellow) 100%);
         }
         .section-title {
-            font-weight: 900; /* Extra bold for titles like on poster */
+            font-weight: 900;
             text-align: center;
-            margin-bottom: 2rem; /* Spacing below titles */
+            margin-bottom: 2rem; /* More space for titles */
         }
         .card-hover {
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
@@ -50,32 +54,74 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        /* Ensure icons are vertically aligned with text */
-        .icon-text-align svg, .icon-text-align .fa {
+        .icon-text-align svg, .icon-text-align .fa, .icon-text-align .fas {
             display: inline-block;
             vertical-align: middle;
             margin-right: 0.5rem;
         }
-        /* Responsive iframe for map (if you add one later) */
-        .responsive-iframe-container {
-            position: relative;
-            overflow: hidden;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-        }
-        .responsive-iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 0;
-        }
-        .btn-register { /* Style for registration button */
-            background-color: #34A853; /* Google Forms green */
+        .btn-register {
+            background-color: #34A853;
             color: white;
         }
         .btn-register:hover {
             background-color: #2c8c42;
+        }
+        .trend-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--color-hot-red);
+            color: white;
+            font-size: 0.75rem; 
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem; 
+            transform: rotate(15deg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 10; /* Ensure badge is on top */
+        }
+        .course-card-container {
+            position: relative;
+        }
+
+        /* FAQ Accordion Styles */
+        .faq-item summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--color-dark-text);
+            transition: background-color 0.2s ease;
+        }
+        .faq-item summary:hover {
+            background-color: #f9fafb;
+        }
+        .faq-item summary::-webkit-details-marker {
+            display: none; /* Hide default marker in Chrome/Safari */
+        }
+        .faq-item summary .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .faq-item[open] summary .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-content {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            background-color: #fff;
+            color: #4B5563; /* Tailwind gray-600 */
+        }
+        /* Testimonial card specific styles */
+        .testimonial-card {
+            background-color: var(--color-testimonial-bg);
+            border-left: 5px solid var(--color-primary-orange);
         }
     </style>
 </head>
@@ -91,21 +137,25 @@
                         </svg>
                     </button>
                 </div>
-                
-                <a href="#" class="text-2xl font-bold text-primary-orange">Summer Brain Boost</a>
-                
-                <div class="hidden md:flex space-x-4">
+                <a href="#" class="text-2xl font-bold text-primary-orange text-center md:text-left flex-grow md:flex-grow-0">Summer Brain Boost</a>
+                <div class="hidden md:flex space-x-2 lg:space-x-4">
                     <a href="#home" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Home</a>
                     <a href="#courses" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Courses</a>
+                    <a href="#trending" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Trending</a>
+                    <a href="#testimonials" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Testimonials</a>
                     <a href="#approach" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Approach</a>
-                    <a href="#contact" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Contact & Register</a>
+                    <a href="#faq" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">FAQ</a>
+                    <a href="#contact" class="text-gray-700 hover:text-primary-orange px-3 py-2 rounded-md text-sm font-medium">Contact</a>
                 </div>
+                 <div class="md:hidden w-6 h-6"></div>
             </div>
-            
             <div id="mobile-menu" class="md:hidden hidden pt-2 pb-3 space-y-1">
                 <a href="#home" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Home</a>
                 <a href="#courses" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Courses</a>
+                <a href="#trending" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Trending Skills</a>
+                <a href="#testimonials" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Testimonials</a>
                 <a href="#approach" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Approach</a>
+                <a href="#faq" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">FAQ</a>
                 <a href="#contact" class="block text-gray-700 hover:text-primary-orange hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">Contact & Register</a>
             </div>
         </nav>
@@ -131,25 +181,77 @@
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-dark-teal">Our Engaging Programs</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div class="bg-dark-teal text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
-                        <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 14h.01M12 11h.01M15 11h.01M12 7.01V7M15 7.01V7M9 7.01V7m5.012 4.012L12 12m2.012-2.012L12 12m0 0L9.988 9.988M12 12l2.012 2.012M12 12L9.988 14.012M3.055 11H5a7 7 0 0114 0h1.945M4 17h16"></path></svg>
-                        <h3 class="text-xl sm:text-2xl font-bold mb-3">Mental Math Challenges</h3>
-                        <p class="text-sm sm:text-base">Practice quick calculations to refine your speed and accuracy.</p>
+                    <div class="course-card-container">
+                        <div class="bg-dark-teal text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center h-full">
+                            <div class="trend-badge">🔥 Hot Trend</div>
+                            <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4 text-accent-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 14h.01M12 11h.01M15 11h.01M12 7.01V7M15 7.01V7M9 7.01V7m5.012 4.012L12 12m2.012-2.012L12 12m0 0L9.988 9.988M12 12l2.012 2.012M12 12L9.988 14.012M3.055 11H5a7 7 0 0114 0h1.945M4 17h16"></path></svg>
+                            <h3 class="text-xl sm:text-2xl font-bold mb-3">Mental Math Challenges</h3>
+                            <p class="text-sm sm:text-base">Practice quick calculations to refine your speed and accuracy.</p>
+                        </div>
                     </div>
-                    <div class="bg-primary-orange text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
-                         <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.921 0M12 17.747a8.485 8.485 0 01-11.921 0M12 17.747l-.09-.087a8.454 8.454 0 01-4.838-7.038 8.458 8.458 0 014.928-7.007M12 17.747l.09-.087a8.454 8.454 0 004.838-7.038 8.458 8.458 0 00-4.928-7.007"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M19 3v4M2 12h20"></path></svg>
+                    <div class="bg-primary-orange text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center h-full">
+                         <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4 text-accent-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.921 0M12 17.747a8.485 8.485 0 01-11.921 0M12 17.747l-.09-.087a8.454 8.454 0 01-4.838-7.038 8.458 8.458 0 014.928-7.007M12 17.747l.09-.087a8.454 8.454 0 004.838-7.038 8.458 8.458 0 00-4.928-7.007"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M19 3v4M2 12h20"></path></svg>
                         <h3 class="text-xl sm:text-2xl font-bold mb-3">Speed Reading & Comprehension</h3>
                         <p class="text-sm sm:text-base">Engage with literature, set reading goals, and practice summarizing texts to improve retention.</p>
                     </div>
-                    <div class="bg-dark-teal text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
-                        <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    <div class="bg-dark-teal text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center h-full">
+                        <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4 text-accent-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         <h3 class="text-xl sm:text-2xl font-bold mb-3">Creative Writing & Poetry</h3>
                         <p class="text-sm sm:text-base">Express yourself through storytelling and poetry, refining your vocabulary and linguistic creativity.</p>
                     </div>
-                    <div class="bg-primary-orange text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center">
-                         <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM10 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"></path></svg>
+                    <div class="bg-primary-orange text-light-text p-6 sm:p-8 rounded-xl shadow-xl card-hover flex flex-col items-center text-center h-full">
+                         <svg class="w-12 h-12 sm:w-16 sm:h-16 mb-4 text-accent-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM10 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"></path></svg>
                         <h3 class="text-xl sm:text-2xl font-bold mb-3">Word Games & Language Quizzes</h3>
                         <p class="text-sm sm:text-base">Expand your vocabulary with crosswords, word association games, and bilingual challenges.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="trending" class="py-16 md:py-24 bg-light-bg">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-primary-orange">Trending Skills Focus</h2>
+                <p class="text-center text-base sm:text-lg text-gray-700 mb-12 max-w-3xl mx-auto">
+                    Equip yourself with skills that are shaping the future. Our special focus areas are designed to give you an edge in an ever-evolving world.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover flex flex-col items-center text-center border-t-4 border-accent-yellow">
+                        <i class="fas fa-brain fa-3x text-primary-orange mb-4"></i>
+                        <h3 class="text-xl sm:text-2xl font-bold text-dark-text mb-3">AI & Data Literacy</h3>
+                        <p class="text-sm sm:text-base text-gray-600">Understand the fundamentals of Artificial Intelligence and learn how to interpret and utilize data effectively in various contexts.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover flex flex-col items-center text-center border-t-4 border-dark-teal">
+                        <i class="fas fa-laptop-code fa-3x text-dark-teal mb-4"></i>
+                        <h3 class="text-xl sm:text-2xl font-bold text-dark-text mb-3">Digital Problem Solving</h3>
+                        <p class="text-sm sm:text-base text-gray-600">Develop critical thinking to tackle complex challenges using digital tools and innovative technological approaches.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover flex flex-col items-center text-center border-t-4 border-primary-orange">
+                        <i class="fas fa-lightbulb fa-3x text-primary-orange mb-4"></i>
+                        <h3 class="text-xl sm:text-2xl font-bold text-dark-text mb-3">Creative Tech Fusion</h3>
+                        <p class="text-sm sm:text-base text-gray-600">Merge your creative talents with technology. Explore digital art, coding for creatives, and multimedia storytelling.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimonials" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-dark-teal">What Our Students Say</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="testimonial-card p-6 rounded-lg shadow-lg card-hover">
+                        <i class="fas fa-quote-left fa-2x text-primary-orange mb-4"></i>
+                        <p class="text-gray-700 italic mb-4 text-sm sm:text-base">"The Mental Math Challenges completely changed how I approach numbers! I'm faster and more confident. Highly recommend!"</p>
+                        <p class="font-semibold text-dark-text">- Alex P., Grade 10</p>
+                    </div>
+                    <div class="testimonial-card p-6 rounded-lg shadow-lg card-hover">
+                        <i class="fas fa-quote-left fa-2x text-primary-orange mb-4"></i>
+                        <p class="text-gray-700 italic mb-4 text-sm sm:text-base">"I never thought I could enjoy creative writing so much. The instructors were amazing and really helped me find my voice."</p>
+                        <p class="font-semibold text-dark-text">- Priya K., Grade 8</p>
+                    </div>
+                    <div class="testimonial-card p-6 rounded-lg shadow-lg card-hover">
+                        <i class="fas fa-quote-left fa-2x text-primary-orange mb-4"></i>
+                        <p class="text-gray-700 italic mb-4 text-sm sm:text-base">"Summer Brain Boost was the perfect way to prepare for the new school year. The speed reading techniques are invaluable."</p>
+                        <p class="font-semibold text-dark-text">- Ben T., Grade 11</p>
                     </div>
                 </div>
             </div>
@@ -159,53 +261,97 @@
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-primary-orange">Daily Practice & Reflection</h2>
                 <p class="text-center text-base sm:text-lg text-gray-700 mb-12 max-w-3xl mx-auto">
-                    🌞 Unlock Your Potential This Summer! 📖➗ Make this summer count by strengthening your calculation speed and mastery of language! Whether you're aiming to boost your academic prowess or simply enhance your cognitive agility, our program emphasizes daily engagement and thoughtful reflection. Keep a journal, track progress, and celebrate achievements while maintaining consistency.
+                    🌞 Unlock Your Potential This Summer! 📖➗ Make this summer count by strengthening your calculation speed and mastery of language! Our program emphasizes daily engagement and thoughtful reflection.
                 </p>
                 <div class="grid md:grid-cols-2 gap-8 items-center">
                     <div class="space-y-6">
                         <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
-                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <i class="fas fa-chart-line fa-2x text-green-500 mr-4 flex-shrink-0 mt-1"></i>
                             <div>
                                  <h3 class="text-lg sm:text-xl font-semibold text-dark-teal mb-1">Track Your Progress</h3>
-                                <p class="text-gray-600 text-sm sm:text-base">Monitor your improvements and see your skills grow week by week with our structured feedback and progress tracking. Celebrate your achievements along the way!</p>
+                                <p class="text-gray-600 text-sm sm:text-base">Monitor your improvements and see your skills grow week by week with our structured feedback and progress tracking.</p>
                             </div>
                         </div>
                         <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
-                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <i class="fas fa-calendar-check fa-2x text-green-500 mr-4 flex-shrink-0 mt-1"></i>
                             <div>
                                 <h3 class="text-lg sm:text-xl font-semibold text-dark-teal mb-1">Maintain Consistency</h3>
-                                <p class="text-gray-600 text-sm sm:text-base">Develop strong learning habits through daily exercises and activities. Keeping a journal can help reflect on your journey and maintain focus.</p>
+                                <p class="text-gray-600 text-sm sm:text-base">Develop strong learning habits through daily exercises. Keeping a journal can help reflect on your journey and maintain focus.</p>
                             </div>
                         </div>
-                         <div class="flex items-start p-6 bg-white rounded-lg shadow-md">
-                            <svg class="w-8 h-8 text-green-500 mr-4 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                         <div class="flex items-start p-6 bg-white rounded-lg shadow-md"> 
+                            <i class="fas fa-chalkboard-teacher fa-2x text-green-500 mr-4 flex-shrink-0 mt-1"></i>
                             <div>
                                 <h3 class="text-lg sm:text-xl font-semibold text-dark-teal mb-1">Expert Guidance</h3>
-                                <p class="text-gray-600 text-sm sm:text-base">Learn from experienced instructors dedicated to your success and passionate about education, guiding your daily practice and reflection.</p>
+                                <p class="text-gray-600 text-sm sm:text-base">Learn from experienced instructors dedicated to your success and passionate about education.</p>
                             </div>
                         </div>
                     </div>
                     <div class="mt-8 md:mt-0">
-                        <img src="https://placehold.co/600x400/F97316/FFFFFF?text=Interactive+Learning" alt="Students learning and reflecting" class="rounded-lg shadow-xl w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/CCCCCC/FFFFFF?text=Image+Not+Found';">
+                        <img src="https://placehold.co/600x450/0D9488/FFFFFF?text=Engaged+Learning+Environment" alt="Students engaged in a learning environment" class="rounded-lg shadow-xl w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x450/CCCCCC/FFFFFF?text=Image+Not+Found';">
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="contact" class="py-16 md:py-24 bg-white">
+        <section id="faq" class="py-16 md:py-24 bg-white">
             <div class="container mx-auto px-6">
-                <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-dark-teal">Contact & Register</h2>
-                <div class="max-w-3xl mx-auto bg-light-bg p-6 sm:p-8 md:p-12 rounded-xl shadow-2xl">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-dark-teal">Frequently Asked Questions</h2>
+                <div class="max-w-3xl mx-auto space-y-4">
+                    <details class="faq-item group">
+                        <summary>
+                            <span>What age groups is this program for?</span>
+                            <span class="faq-icon transform group-open:rotate-45 transition-transform duration-300"><i class="fas fa-plus"></i></span>
+                        </summary>
+                        <div class="faq-content">
+                            <p>Our Summer Brain Boost programs are designed for students from Grade 6 to Grade 12. Specific courses may have narrower grade recommendations, which will be detailed on the course information page.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item group">
+                        <summary>
+                            <span>Are the sessions online or in-person?</span>
+                            <span class="faq-icon transform group-open:rotate-45 transition-transform duration-300"><i class="fas fa-plus"></i></span>
+                        </summary>
+                        <div class="faq-content">
+                            <p>We offer both online and limited in-person sessions for Summer 2025. Please check the details for each specific course. All online sessions are live and interactive, led by our expert instructors.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item group">
+                        <summary>
+                            <span>What is the duration of the courses?</span>
+                            <span class="faq-icon transform group-open:rotate-45 transition-transform duration-300"><i class="fas fa-plus"></i></span>
+                        </summary>
+                        <div class="faq-content">
+                            <p>Most courses run for 4-6 weeks, with sessions typically held 2-3 times per week. The exact duration and schedule will vary by course. Detailed information is available on individual course pages.</p>
+                        </div>
+                    </details>
+                     <details class="faq-item group">
+                        <summary>
+                            <span>How do I register for a course?</span>
+                            <span class="faq-icon transform group-open:rotate-45 transition-transform duration-300"><i class="fas fa-plus"></i></span>
+                        </summary>
+                        <div class="faq-content">
+                            <p>You can register by clicking the "Register for Info Session" or "Register Here" buttons on this page, which will take you to our Google Form. For direct course registration (once open), links will be provided, or you can contact us.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-16 md:py-24 bg-light-bg">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl section-title text-primary-orange">Contact & Register</h2>
+                <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 md:p-12 rounded-xl shadow-2xl">
                     <p class="text-center text-base sm:text-lg text-gray-700 mb-8">
-                        Have questions or ready to join our Summer Brain Boost? Contact Rashmi Sinha directly or use the form below for inquiries. To register for an info session or the program, please click the registration button.
+                        Have questions or ready to join our Summer Brain Boost? Contact Rashmi Sinha directly or use the form below for inquiries.
                     </p>
                     <div class="text-center space-y-6 mb-10">
                         <div class="icon-text-align">
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-primary-orange inline-block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                            <i class="fas fa-phone-alt w-5 h-5 sm:w-6 sm:h-6 text-primary-orange inline-block"></i>
                             <a href="tel:8368736670" class="text-lg sm:text-xl text-gray-800 hover:text-primary-orange font-semibold">8368736670</a>
                         </div>
                         <div class="icon-text-align">
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-primary-orange inline-block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+                            <i class="fas fa-envelope w-5 h-5 sm:w-6 sm:h-6 text-primary-orange inline-block"></i>
                             <a href="mailto:sinharas78@gmail.com" class="text-lg sm:text-xl text-gray-800 hover:text-primary-orange font-semibold">sinharas78@gmail.com</a>
                         </div>
                         <p class="text-base sm:text-lg text-gray-700 font-semibold">Program Coordinator: Rashmi Sinha</p>
@@ -254,20 +400,16 @@
         // JavaScript for mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-        const mobileMenuLinks = document.querySelectorAll('#mobile-menu a'); // Get all links in mobile menu
+        const mobileMenuLinks = document.querySelectorAll('#mobile-menu a'); 
 
         mobileMenuButton.addEventListener('click', () => {
             mobileMenu.classList.toggle('hidden');
-            // Optional: Change hamburger icon to X and back
-            // const icon = mobileMenuButton.querySelector('svg path'); // Not strictly needed with innerHTML replacement
             if (!mobileMenu.classList.contains('hidden')) {
-                // Menu is open, show X icon
                 mobileMenuButton.innerHTML = `
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>`;
             } else {
-                // Menu is closed, show hamburger icon
                 mobileMenuButton.innerHTML = `
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
@@ -275,17 +417,33 @@
             }
         });
 
-        // Close mobile menu when a link is clicked
         mobileMenuLinks.forEach(link => {
             link.addEventListener('click', () => {
                 mobileMenu.classList.add('hidden');
-                // Reset icon to hamburger when menu closes after link click
                  mobileMenuButton.innerHTML = `
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                     </svg>`;
             });
         });
+
+        // JavaScript for FAQ Accordion
+        // This uses the native <details> element, so minimal JS is needed for basic functionality.
+        // The CSS handles the open/close icon change for the most part.
+        // If you want to ensure only one FAQ item is open at a time, more JS would be needed.
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const summary = item.querySelector('summary');
+            summary.addEventListener('click', () => {
+                // If you want to close other open items when one is clicked:
+                // faqItems.forEach(otherItem => {
+                //     if (otherItem !== item && otherItem.hasAttribute('open')) {
+                //         otherItem.removeAttribute('open');
+                //     }
+                // });
+            });
+        });
+
     </script>
 
 </body>
