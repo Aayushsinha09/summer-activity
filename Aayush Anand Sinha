@@ -1,0 +1,1595 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Room, RoomEvent, VideoPresets } from 'livekit-client';
+import ProctoredInterviewPage from './ProctoredInterviewPage';
+import './ProctoredInterviewPage' // Assuming .css if it's a style file, or .js/.jsx if a component
+
+// Import proctoring services
+import FaceDetectionService from '../services/FaceDetectionService';
+import TabMonitoringService from '../services/TabMonitoringService';
+import ProctoringService from '../services/ProctoringService';
+import ListeningIcon from "../assets/ListeningIcon.svg";
+import Speaking from "../assets/Speakiing.svg"; // Original typo "Speakiing"
+import FeedbackPopup from './feedbackPopupForm';
+
+
+// Helper function for URL query params
+const useQuery = () => {
+  return new URLSearchParams(window.location.search);
+};
+
+const HeyGenStreaming = () => {
+  // Basic UI state
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [error, setError] = useState(null);
+  const [debugMessages, setDebugMessages] = useState([]);
+  const [showDebug, setShowDebug] = useState(false);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
+  const query = useQuery();
+  const candidateCode = query.get('code') || 'demo-candidate';
+  const jobId = query.get('id') || 'demo-job';
+  
+  // Interview state
+  const [interviewStartTime, setInterviewStartTime] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [isApiSuccess, setIsApiSuccess] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const [responses, setResponses] = useState([]);
+  const [transcript, setTranscript] = useState('');
+  const [interviewComplete, setInterviewComplete] = useState(false);
+  const [avatarSpeaking, setAvatarSpeaking] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  
+  // Original refs
+  const questionsLoadingRef = useRef(false);
+  const questionsRef = useRef([]);
+  const sessionInfoRef = useRef(null);
+  const roomRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const webSocketRef = useRef(null);
+  const sessionTokenRef = useRef(null);
+  const mediaElementRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const silenceTimeoutRef = useRef(null);
+  const maxListeningTimeoutRef = useRef(null);
+  const isSpeakingIntervalRef = useRef(null);
+  const textQueueRef = useRef([]);
+  const isProcessingRef = useRef(false);
+  
+  // Add new state variables for proctoring
+  const [proctoringEnabled, setProctoringEnabled] = useState(true);
+  const [proctoringStatus, setProctoringStatus] = useState({
+    faceCount: 0,
+    isLookingAway: false,
+    tabActive: true,
+    violations: 0,
+    lastCapture: null
+  });
+  const [showProctoringInfo, setShowProctoringInfo] = useState(false);
+  const [proctoringStats, setProctoringStats] = useState({
+    faceViolations: 0,
+    gazeViolations: 0,
+    tabViolations: 0,
+    totalViolations: 0,
+    captures: 0
+  });
+  
+  // Add new refs for proctoring services
+  const faceDetectionServiceRef = useRef(null);
+  const tabMonitoringServiceRef = useRef(null);
+  const proctoringServiceRef = useRef(null);
+  const proctoringCanvasRef = useRef(null);
+  const faceDetectionIntervalRef = useRef(null);
+  const screenCaptureIntervalRef = useRef(null);
+  const proctoringDataRef = useRef([]);
+  const lastViolationTimeRef = useRef({});
+  const [lastAdvancementTime, setLastAdvancementTime] = useState(Date.now());
+  const [forcedAdvancementActive, setForcedAdvancementActive] = useState(false);
+
+  
+  // API Configuration
+  const API_CONFIG = {
+    apiKey: process.env.REACT_APP_HEYGEN_API_KEY || "ZWRiMGZmMTc0ZGExNDA1ZjgxZjIxODcwNjg0OTA2NDktMTc0MjkxNTMxOQ==",
+    serverUrl: "https://api.heygen.com" // Removed trailing space from original
+  };
+
+  // Update questionsRef whenever questions state changes
+  useEffect(() => {
+    questionsRef.current = questions;
+    addDebugMessage(`Questions updated, now have ${questions.length} questions available`);
+  }, [questions]);
+
+  // Add debug message
+  const addDebugMessage = (message) => {
+    console.log(`[DEBUG] ${message}`);
+    setDebugMessages(prev => {
+      const newMessages = [...prev, `${message}`];
+      // Keep only the last 100 messages for performance
+      if (newMessages.length > 100) {
+        return newMessages.slice(newMessages.length - 100);
+      }
+      return newMessages;
+    });
+  };
+
+  // Show error
+  const showError = (message) => {
+    console.error(`[ERROR] ${message}`);
+    setError(message);
+  };
+
+  // Reset error
+  const resetError = () => {
+    setError(null);
+  };
+
+  // Sleep utility for delays
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const fetchQuestions = useCallback(async () => {
+    // Prevent duplicate requests
+    if (questionsLoadingRef.current || isApiSuccess) return;
+    
+    // Abort any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+  
+    try {
+      setQuestionsLoading(true);
+      questionsLoadingRef.current = true;
+      setApiError(null);
+
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+  
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/v1/questions/generate`, {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          candidate_id: candidateCode,
+          job_id: jobId,
+          current_time: currentTime
+        }),
+        signal: controller.signal
+      });
+  
+      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+      
+      const data = await response.json();
+  
+      // Handle both array and object response formats
+      if (Array.isArray(data)) {
+        // Direct array response from your API
+        if (data.length > 0) {
+          setQuestions(data);
+          setIsApiSuccess(true);
+        } else {
+          throw new Error("No questions returned from API");
+        }
+      } else if (data?.questions && Array.isArray(data.questions)) {
+        // Legacy object format with questions array
+        if (data.questions.length > 0) {
+          setQuestions(data.questions);
+          setIsApiSuccess(true);
+        } else {
+          throw new Error("No questions returned from API");
+        }
+      } else {
+        throw new Error("Invalid question format in API response");
+      }
+      
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error(error);
+        setApiError(error.message);
+        setIsApiSuccess(false);
+      }
+    } finally {
+      questionsLoadingRef.current = false;
+      setQuestionsLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, [candidateCode, jobId, isApiSuccess]); // Added isApiSuccess to dependency array
+  
+  // Replace your useEffect with this:
+  useEffect(() => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+  
+    fetchQuestions();
+  
+    return () => {
+      // Only abort if the component unmounts
+      controller.abort();
+    };
+  }, [fetchQuestions]); // Only depend on fetchQuestions
+
+
+  // Initialize proctoring services
+  const initProctoringServices = async () => {
+    addDebugMessage("Initializing proctoring services...");
+    
+    try {
+      // Initialize face detection service
+      if (!faceDetectionServiceRef.current) {
+        faceDetectionServiceRef.current = new FaceDetectionService();
+        try {
+          await faceDetectionServiceRef.current.loadModels();
+          addDebugMessage("✅ Face detection models loaded successfully");
+        } catch (modelError) {
+          addDebugMessage(`⚠️ Face detection model loading error: ${modelError.message}`);
+          // Continue anyway, just with limited functionality
+        }
+      }
+      
+      // Initialize tab monitoring service
+      if (!tabMonitoringServiceRef.current) {
+        tabMonitoringServiceRef.current = new TabMonitoringService().initialize();
+        
+        // Set up tab switch listener
+        tabMonitoringServiceRef.current.addEventListener('tabSwitch', (data) => {
+          addDebugMessage(`Tab switch detected: ${data.reason}`);
+          logProctoringViolation('tab_switch', 'User switched to another tab or application');
+          
+          setProctoringStatus(prev => ({
+            ...prev,
+            tabActive: false
+          }));
+          
+          setProctoringStats(prev => ({
+            ...prev,
+            tabViolations: prev.tabViolations + 1,
+            totalViolations: prev.totalViolations + 1
+          }));
+        });
+        
+        // Set up focus listener for tab returning to active
+        tabMonitoringServiceRef.current.addEventListener('focus', (data) => {
+          if (data.hasFocus) {
+            setProctoringStatus(prev => ({
+              ...prev,
+              tabActive: true
+            }));
+          }
+        });
+      }
+      
+      // Initialize proctoring service
+      if (!proctoringServiceRef.current) {
+        proctoringServiceRef.current = new ProctoringService(process.env.REACT_APP_BASE_URL);
+      }
+      
+      addDebugMessage("✅ Proctoring services initialized");
+      return true;
+    } catch (error) {
+      addDebugMessage(`⚠️ Error initializing proctoring services: ${error.message}`);
+      return false;
+    }
+  };
+  
+  // Start face detection monitoring
+  const startFaceDetection = () => {
+    if (!proctoringEnabled || !mediaElementRef.current || !faceDetectionServiceRef.current) {
+      addDebugMessage("⚠️ Cannot start face detection - prerequisites not met");
+      return false;
+    }
+    
+    addDebugMessage("Starting face detection monitoring...");
+    
+    // Clear any existing interval
+    if (faceDetectionIntervalRef.current) {
+      clearInterval(faceDetectionIntervalRef.current);
+    }
+    
+    // Set up interval for face detection (every 2 seconds)
+    faceDetectionIntervalRef.current = setInterval(async () => {
+      if (!mediaElementRef.current || !faceDetectionServiceRef.current) return;
+      
+      try {
+        // Detect faces
+        const detectionResults = await faceDetectionServiceRef.current.detectFaces(mediaElementRef.current);
+        
+        // Update face count in status
+        setProctoringStatus(prev => ({
+          ...prev,
+          faceCount: detectionResults.faceCount
+        }));
+        
+        // Check for face count violations
+        if (detectionResults.faceCount === 0 || detectionResults.faceCount > 1) {
+          const now = Date.now();
+          const lastViolation = lastViolationTimeRef.current.faceViolation || 0;
+          
+          // Only log violations every 5 seconds to avoid flooding
+          if (now - lastViolation > 5000) {
+            lastViolationTimeRef.current.faceViolation = now;
+            
+            const message = detectionResults.faceCount === 0 
+              ? 'No face detected in camera' 
+              : `Multiple faces detected (${detectionResults.faceCount})`;
+            
+            logProctoringViolation('face_count', message);
+            
+            setProctoringStats(prev => ({
+              ...prev,
+              faceViolations: prev.faceViolations + 1,
+              totalViolations: prev.totalViolations + 1
+            }));
+          }
+        }
+        
+        // If a face is detected, check gaze
+        if (detectionResults.faceCount === 1) {
+          const gazeResult = faceDetectionServiceRef.current.analyzeGaze(
+            detectionResults.detections[0],
+            detectionResults.width,
+            detectionResults.height
+          );
+          
+          setProctoringStatus(prev => ({
+            ...prev,
+            isLookingAway: gazeResult.isLookingAway
+          }));
+          
+          // Log gaze violation if looking away
+          if (gazeResult.isLookingAway) {
+            const now = Date.now();
+            const lastViolation = lastViolationTimeRef.current.gazeViolation || 0;
+            
+            // Only log violations every 5 seconds
+            if (now - lastViolation > 5000) {
+              lastViolationTimeRef.current.gazeViolation = now;
+              
+              logProctoringViolation('gaze', `User looking away from camera: ${gazeResult.reason}`);
+              
+              setProctoringStats(prev => ({
+                ...prev,
+                gazeViolations: prev.gazeViolations + 1,
+                totalViolations: prev.totalViolations + 1
+              }));
+            }
+          }
+        }
+        
+        // Draw detection results on canvas if debugging is enabled
+        if (showDebug && proctoringCanvasRef.current) {
+          faceDetectionServiceRef.current.drawDetections(
+            proctoringCanvasRef.current,
+            mediaElementRef.current,
+            detectionResults
+          );
+        }
+      } catch (error) {
+        addDebugMessage(`Error in face detection: ${error.message}`);
+      }
+    }, 2000); // Check every 2 seconds
+    
+    return true;
+  };
+  
+  // Start screen capture
+  const startScreenCapture = () => {
+    if (!proctoringEnabled || !mediaElementRef.current || !faceDetectionServiceRef.current) { // faceDetectionServiceRef was included in original logic, keeping it
+      addDebugMessage("⚠️ Cannot start screen capture - prerequisites not met");
+      return false;
+    }
+    
+    addDebugMessage("Starting screen capture monitoring...");
+    
+    // Clear any existing interval
+    if (screenCaptureIntervalRef.current) {
+      clearInterval(screenCaptureIntervalRef.current);
+    }
+    
+    // Capture a screenshot immediately
+    try {
+      captureScreenshot();
+    } catch (error) {
+      addDebugMessage(`Error in initial screenshot capture: ${error.message}`);
+    }
+    
+    // Set up interval for screen capture (every 3 minutes = 180000 ms)
+    screenCaptureIntervalRef.current = setInterval(() => {
+      try {
+        captureScreenshot();
+      } catch (error) {
+        addDebugMessage(`Error in scheduled screenshot capture: ${error.message}`);
+      }
+    }, 3 * 60 * 1000);
+    
+    return true;
+  };
+  
+  // Capture screenshot
+  const captureScreenshot = async () => {
+    if (!mediaElementRef.current || !mediaElementRef.current.videoWidth || !mediaElementRef.current.videoHeight) { // Ensure video dimensions are available
+        addDebugMessage("Cannot capture screenshot: Video element not ready or no video dimensions.");
+        return false;
+    }
+    
+    try {
+      addDebugMessage("Capturing screenshot...");
+      
+      // Capture canvas from video element
+      const canvas = document.createElement('canvas');
+      canvas.width = mediaElementRef.current.videoWidth;
+      canvas.height = mediaElementRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(mediaElementRef.current, 0, 0, canvas.width, canvas.height);
+      
+      // Get base64 image (use JPEG for smaller size)
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      
+      const captureData = {
+        type: 'screen_capture',
+        candidateId: candidateCode,
+        jobId: jobId,
+        timestamp: new Date().toISOString(),
+        imageData: imageData,   // This is the base64 string
+        questionIndex: currentQuestionIndex
+      };
+      
+      proctoringDataRef.current.push(captureData);
+      addDebugMessage("✅ Screenshot captured");
+      
+      return true;
+    } catch (error) {
+      addDebugMessage(`Error capturing screenshot: ${error.message}`);
+      return false;
+    }
+  };
+  
+  // Log proctoring violation
+// Log proctoring violation (local only)
+const logProctoringViolation = (violationType, message) => {
+  addDebugMessage(`🚨 Proctoring violation: ${violationType} - ${message}`);
+  
+  // Create violation data (local only)
+  const violationData = {
+    violationType: violationType,
+    message: message,
+    timestamp: new Date().toISOString(),
+    questionIndex: currentQuestionIndex
+  };
+  
+  // Add to proctoring data
+  proctoringDataRef.current.push(violationData);
+  
+  // Update violations in status
+  setProctoringStatus(prev => ({
+    ...prev,
+    violations: prev.violations + 1
+  }));
+
+  // Update stats based on violation type
+  setProctoringStats(prev => {
+    const newStats = {...prev, totalViolations: prev.totalViolations + 1};
+    
+    switch(violationType) {
+      case 'face_count':
+        newStats.faceViolations += 1;
+        break;
+      case 'gaze':
+        newStats.gazeViolations += 1;
+        break;
+      case 'tab_switch':
+        newStats.tabViolations += 1;
+        break;
+      default: // Added default case to handle potential other violation types
+        break;
+    }
+    
+    return newStats;
+  });
+};
+  
+  // Save final proctoring report
+const saveProctoringReport = async () => {
+  if (!candidateCode) return false;
+  
+  addDebugMessage("Saving final proctoring report...");
+  
+  try {
+    // Prepare form data
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append('candidate_id', candidateCode);
+    formData.append('tab_switching', proctoringStats.tabViolations > 0 ? "true" : "false");
+    formData.append('face_not_detected', proctoringStats.faceViolations > 0 ? "true" : "false");
+    formData.append('not_looking_at_camera', proctoringStats.gazeViolations > 0 ? "true" : "false");
+
+    // Get all screen captures
+    const captures = proctoringDataRef.current.filter(d => d.type === 'screen_capture');
+    
+    // Determine which screenshots to send based on violations
+    let screenshotsToSend = 0;
+    
+    if (proctoringStats.tabViolations > 0) {
+      screenshotsToSend = 1; // Always send 1 for tab switching
+    }
+    
+    if (proctoringStats.faceViolations > 0) {
+      screenshotsToSend = Math.max(screenshotsToSend, 1); // At least 1 for face violations
+      
+      // If both tab switching and face violations, send 2
+      if (proctoringStats.tabViolations > 0 && proctoringStats.faceViolations > 0) {
+        screenshotsToSend = 2;
+      }
+    }
+    
+    // If no violations, don't send any screenshots
+    if (proctoringStats.totalViolations === 0) {
+      screenshotsToSend = 0;
+    }
+
+    addDebugMessage(`Violations detected - Tab: ${proctoringStats.tabViolations}, Face: ${proctoringStats.faceViolations}, Gaze: ${proctoringStats.gazeViolations}`);
+    addDebugMessage(`Will send ${screenshotsToSend} screenshot(s)`);
+
+    // Add screenshots based on violation logic
+    for (let i = 0; i < screenshotsToSend; i++) {
+      if (captures[i] && captures[i].imageData) {
+        try {
+          // Convert base64 to blob
+          const base64Response = await fetch(captures[i].imageData);
+          const blob = await base64Response.blob();
+          
+          // Add to form data
+          formData.append(`screenshot${i+1}`, blob, `screenshot${i+1}.jpg`);
+          addDebugMessage(`Added screenshot${i+1} (size: ${blob.size} bytes)`);
+        } catch (error) {
+          addDebugMessage(`Error processing screenshot${i+1}: ${error.message}`);
+          formData.append(`screenshot${i+1}`, ''); // Send empty if conversion fails
+        }
+      } else {
+        formData.append(`screenshot${i+1}`, ''); // Send empty if no screenshot available
+      }
+    }
+
+    // Only send the request if there were actual violations
+    if (proctoringStats.totalViolations > 0) {
+      addDebugMessage("Sending violation data to API...");
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/v1/proctoring/violation`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API failed: ${response.status} - ${errorText}`);
+      }
+
+      // const result = await response.json(); // Original code had this, but result not used
+      await response.json(); // Consume the JSON to prevent issues, even if not used
+      addDebugMessage("✅ Violation data sent successfully");
+      return true;
+    } else {
+      addDebugMessage("No violations detected - skipping API call");
+      return false;
+    }
+
+  } catch (error) {
+    addDebugMessage(`❌ Error saving proctoring report: ${error.message}`);
+    return false;
+  }
+};
+
+
+  // Start proctoring (to be called after interview starts)
+  const startProctoring = async () => {
+    if (!proctoringEnabled) {
+      addDebugMessage("Proctoring disabled, skipping initialization");
+      return false;
+    }
+    
+    addDebugMessage("Starting proctoring system...");
+    
+    try {
+      // Initialize services
+      await initProctoringServices();
+      
+      // Check camera availability
+      if (!mediaElementRef.current || !mediaElementRef.current.srcObject) {
+        addDebugMessage("⚠️ Camera not connected yet, attempting to connect for proctoring");
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: { // MODIFIED for echo cancellation
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
+          });
+          mediaStreamRef.current = stream; // Store the main stream reference
+          if (mediaElementRef.current) {
+            mediaElementRef.current.srcObject = stream;
+            addDebugMessage("✅ Camera connected for proctoring");
+          }
+        } catch (cameraError) {
+          addDebugMessage(`⚠️ Camera access failed during proctoring setup: ${cameraError.message}`);
+          addDebugMessage("⚠️ Proctoring will have limited functionality");
+          return false;
+        }
+      }
+      
+      // Start face detection
+      startFaceDetection();
+      
+      // Start screen capture
+      startScreenCapture();
+      
+      addDebugMessage("✅ Proctoring system started");
+      return true;
+    } catch (error) {
+      addDebugMessage(`❌ Error starting proctoring system: ${error.message}`);
+      return false;
+    }
+  };
+  
+  // Stop proctoring
+  const stopProctoring = async () => {
+    addDebugMessage("Stopping proctoring system...");
+    
+    // Stop face detection
+    if (faceDetectionIntervalRef.current) {
+      clearInterval(faceDetectionIntervalRef.current);
+      faceDetectionIntervalRef.current = null;
+    }
+    
+    // Stop screen capture
+    if (screenCaptureIntervalRef.current) {
+      clearInterval(screenCaptureIntervalRef.current);
+      screenCaptureIntervalRef.current = null;
+    }
+    
+    // Save final report
+    await saveProctoringReport();
+    
+    // Clean up tab monitoring
+    if (tabMonitoringServiceRef.current) {
+      tabMonitoringServiceRef.current.destroy();
+      tabMonitoringServiceRef.current = null;
+    }
+    
+    addDebugMessage("✅ Proctoring system stopped");
+  };
+
+  // Initialize speech recognition (for the interview)
+  const initSpeechRecognition = () => {
+    addDebugMessage("Initializing speech recognition...");
+    
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      addDebugMessage("⚠️ Speech recognition not supported in this browser");
+      return false;
+    }
+
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onstart = () => {
+        addDebugMessage("📢 Recognition started - Listening for your answer...");
+        setIsListening(true);
+        setTranscript('');
+        
+        // Set a maximum listening time of 30 seconds
+        if (maxListeningTimeoutRef.current) {
+          clearTimeout(maxListeningTimeoutRef.current);
+        }
+        
+        maxListeningTimeoutRef.current = setTimeout(() => {
+          addDebugMessage("Maximum listening time reached (30 seconds)");
+          if (isListening) { // Check isListening state
+            addDebugMessage("*** CRITICAL: Maximum time reached, forcing next question ***");
+            stopListening(transcript || ''); // Pass current transcript
+          }
+        }, 30000);
+        
+        // Set an initial timeout for users who don't speak at all
+        // This will be cleared as soon as they start speaking
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+        
+        silenceTimeoutRef.current = setTimeout(() => {
+          addDebugMessage("No speech detected for 15 seconds, moving to next question");
+          if (isListening) { // Check isListening state
+            addDebugMessage("*** CRITICAL: Initial silence timeout, forcing next question ***");
+            stopListening('');
+          }
+        }, 15000); // Give 15 seconds for the user to start speaking
+      };
+
+      recognitionRef.current.onresult = (event) => {
+        // Get the current transcript
+        const currentTranscript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('');
+        
+        setTranscript(currentTranscript);
+        
+        // If we get speech, reset the silence timeout
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+        
+        // Create a new silence timeout - this will trigger if the user stops speaking
+        silenceTimeoutRef.current = setTimeout(() => {
+          addDebugMessage("User has been silent for 10 seconds after speaking, finishing answer");
+          if (isListening) { // Check isListening state
+            addDebugMessage("*** CRITICAL: Silence detected after speaking, forcing next question ***");
+            if (currentTranscript.trim()) {
+              addDebugMessage("Moving to next question with transcript: " + currentTranscript.substring(0, 30) + "...");
+              stopListening(currentTranscript);
+            } else {
+              // If somehow we got here with no transcript, just move on
+              addDebugMessage("No transcript detected, moving to next question anyway");
+              stopListening('');
+            }
+          }
+        }, 10000); // 10 seconds of silence after speech
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        addDebugMessage(`Speech recognition error: ${event.error}`);
+        
+        // If we get an error, try to restart recognition
+        if (isListening) { // Check isListening state
+          try {
+            recognitionRef.current.stop();
+            setTimeout(() => {
+              if (recognitionRef.current) recognitionRef.current.start(); // Check if still exists
+            }, 1000);
+          } catch (e) {
+            addDebugMessage(`Failed to restart recognition after error: ${e.message}`);
+          }
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        // This can fire early sometimes, so we only update if we're not still listening
+        if (isListening) { // Check isListening state
+          addDebugMessage("Recognition ended unexpectedly. Restarting...");
+          try {
+            if (recognitionRef.current) recognitionRef.current.start(); // Check if still exists
+          } catch (e) {
+            addDebugMessage(`Failed to restart recognition: ${e.message}`);
+            // If we can't restart, force-stop listening to prevent being stuck
+            setIsListening(false);
+            if (silenceTimeoutRef.current) {
+              clearTimeout(silenceTimeoutRef.current);
+            }
+            if (maxListeningTimeoutRef.current) {
+              clearTimeout(maxListeningTimeoutRef.current);
+            }
+            
+            // If we have a transcript, use it and move to the next question
+            // This logic might be problematic if askNextQuestion is also called by stopListening
+            if (transcript && questionsRef.current[currentQuestionIndex]) { // ensure questionsRef.current is accessed safely
+              const newResponse = {
+                question: questionsRef.current[currentQuestionIndex],
+                answer: transcript
+              };
+              
+              setResponses(prev => [...prev, newResponse]);
+              askNextQuestion(); // This could lead to issues if stopListening is also calling it
+            } else if (!questionsRef.current[currentQuestionIndex] && questions.length > 0) { // Handle if currentQuestionIndex is out of bounds but questions exist
+                askNextQuestion(); // Attempt to move to next or finish
+            }
+          }
+        }
+      };
+
+      addDebugMessage("✅ Speech recognition initialized");
+      return true;
+    } catch (error) {
+      addDebugMessage(`❌ Error initializing speech recognition: ${error.message}`);
+      return false;
+    }
+  };
+
+  // Initialize everything
+const initializeSession = async () => {
+  try {
+    addDebugMessage("Beginning full initialization sequence");
+    
+    // Check if we have questions
+    if (questions.length === 0) {
+      // This might be too early if fetchQuestions is still running, rely on isApiSuccess
+      // throw new Error("No questions available to start interview");
+      addDebugMessage("initializeSession: Questions not yet available. fetchQuestions should handle this.");
+    }
+    
+    // Questions are already loaded at component mount (or being loaded)
+    addDebugMessage(`Using ${questions.length} pre-loaded questions (or waiting for fetch)`);
+    
+    // Check camera access explicitly
+    addDebugMessage("Checking camera access...");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: { // MODIFIED for echo cancellation
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+        }
+      });
+      mediaStreamRef.current = stream; // Store the main stream reference
+      
+      // Attach stream to video element
+      if (mediaElementRef.current) {
+        mediaElementRef.current.srcObject = stream;
+        await mediaElementRef.current.play().catch(e => addDebugMessage(`Media play error: ${e.message}`)); // Try to play
+        addDebugMessage("✅ Camera stream connected to video element");
+      }
+    } catch (cameraError) {
+      addDebugMessage(`⚠️ Camera access error: ${cameraError.message}`);
+      showError(`Camera/Microphone access denied or unavailable: ${cameraError.message}. Please check permissions and retry.`);
+      setNeedsUserInteraction(true); // Keep user on the start page if camera fails
+      return; // Stop initialization if camera fails
+    }
+    
+    // Start proctoring first if enabled
+    if (proctoringEnabled) {
+      addDebugMessage("Initializing proctoring with available resources");
+      await initProctoringServices(); // Ensure services are ready
+      
+      if (mediaStreamRef.current) { // Check if stream was successfully obtained
+        await startProctoring(); // startProctoring now awaits initProctoringServices internally
+      } else {
+        addDebugMessage("⚠️ Proctoring will have limited functionality without camera stream.");
+      }
+    }
+    
+    // Initialize speech recognition
+    addDebugMessage("Initializing speech recognition");
+    const speechReady = initSpeechRecognition();
+    if (!speechReady) {
+        showError("Speech recognition could not be initialized. The interview may not function correctly.");
+        // Decide if this is a critical failure or can proceed with degraded functionality
+    }
+    
+    // Create a simple session info object for tracking
+    sessionInfoRef.current = {
+      session_id: `demo-session-${Date.now()}`,
+      url: "demo-url", // Example placeholder
+      access_token: "demo-token" // Example placeholder
+    };
+    
+    // Force loading to false to continue
+    setLoading(false); // This indicates overall session loading, not question loading
+    addDebugMessage("✅ Session initialization potentially complete.");
+    
+    // Start interview with a small delay - this will set the first question
+    // This logic might be better tied to startInterviewButton ensuring user interaction
+    addDebugMessage("Starting interview flow in 3 seconds...");
+    setTimeout(() => {
+      if (questions.length > 0) { // Ensure questions are loaded before starting
+        startInterview(); // This sets up interview state, currentQuestionIndex
+        // askQuestion(0) is called within startInterview if questions exist
+      } else if (!questionsLoading) { // If not loading and no questions, show error
+        showError("No questions loaded. Cannot start interview.");
+        setNeedsUserInteraction(true);
+      } else {
+        addDebugMessage("Waiting for questions to load before starting interview flow...");
+        // The UI should reflect this waiting state if needsUserInteraction is false
+      }
+    }, 3000);
+    
+  } catch (error) {
+    addDebugMessage(`❌ Initialization error: ${error.message}`);
+    showError(`Initialization failed: ${error.message}`);
+    setNeedsUserInteraction(true); // Back to start screen on error
+    
+    // Even if initialization fails, let's remove the loading screen if it was set by this function
+    setTimeout(() => {
+      setLoading(false);
+      addDebugMessage("Forced exit from loading screen due to error");
+    }, 1000); // Shorter delay for error case
+  }
+};
+
+  // Start interview
+const startInterview = async () => { // Renamed from original `startInterview` in one version to avoid conflict
+  setInterviewStartTime(Date.now());
+  addDebugMessage("Starting interview sequence (startInterview function)");
+  
+  try {
+    // Log available questions
+    addDebugMessage(`Starting interview with ${questionsRef.current.length} questions available`);
+    questionsRef.current.forEach((q, i) => addDebugMessage(`Question ${i+1}: ${q.substring(0, 40)}...`));
+    
+    // Proctoring is started in initializeSession if stream is available
+    // No need to start it again here unless logic changes
+    // if (proctoringEnabled && mediaElementRef.current && mediaElementRef.current.srcObject) {
+    //   try {
+    //     await startProctoring();
+    //   } catch (proctoringError) {
+    //     addDebugMessage(`Error starting proctoring from startInterview: ${proctoringError.message}`);
+    //   }
+    // }
+    
+    // Ask first question (with error handling)
+    if (questionsRef.current.length > 0) {
+      addDebugMessage(`First question (from startInterview): "${questionsRef.current[0]}"`);
+      setCurrentQuestionIndex(0); // Ensure index is set
+      await askQuestion(0); // Actually ask the question
+    } else {
+      // Emergency fallback - speak a default question if no questions are available
+      addDebugMessage("ERROR: No questions available in startInterview! Using emergency question.");
+      const emergencyQuestion = "Could you please introduce yourself?";
+      setQuestions([emergencyQuestion]); // Update state so questionsRef also updates
+      setCurrentQuestionIndex(0);
+      await sendTextDirectly(emergencyQuestion, "repeat");
+      startListening(); // Make sure to start listening
+    }
+  } catch (error) {
+    addDebugMessage(`Error in interview start (startInterview function): ${error.message}`);
+    // Display at least the first question on screen even if audio fails
+    if (questionsRef.current.length > 0) {
+      setCurrentQuestionIndex(0);
+    }
+  }
+};
+
+  // Ask a specific question
+  const askQuestion = async (index) => {
+    if (index < questions.length) { // Use state `questions` for reliability
+      const question = questions[index];
+      addDebugMessage(`Asking question ${index + 1}: "${question.substring(0,50)}..."`);
+      
+      // Have the avatar speak the question
+      await sendTextDirectly(question, "repeat");
+      
+      // Start listening immediately after the question is asked
+      addDebugMessage("Starting to listen for answer (from askQuestion)...");
+      startListening();
+    } else {
+      addDebugMessage(`ERROR: Tried to ask question ${index + 1} but only ${questions.length} questions available.`);
+      // Potentially end interview if index is out of bounds after last question
+      if (index >= questions.length && questions.length > 0) {
+          finishInterview();
+      }
+    }
+  };
+
+  // Start listening for answer
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      addDebugMessage("Recognition not initialized, trying to reinitialize...");
+      const success = initSpeechRecognition();
+      if (!success) {
+        addDebugMessage("Failed to initialize speech recognition for startListening");
+        // Still set isListening to true to ensure the timeout works (original logic)
+        // This might be problematic as UI shows listening but it's not.
+        // Consider showing an error or not setting isListening.
+        // For minimal change, keeping original logic:
+        setIsListening(true); 
+        return;
+      }
+    }
+    
+    addDebugMessage("Attempting to start speech recognition (startListening function)...");
+    try {
+      recognitionRef.current.start();
+      // setIsListening(true); // This is now set in onstart handler of recognitionRef
+    } catch (error) {
+      addDebugMessage(`Error starting speech recognition: ${error.message}`);
+      // If start fails (e.g. "InvalidState" if already started), onstart might not fire.
+      // Original logic:
+      setIsListening(true); // Potentially problematic if start failed badly
+    }
+  };
+
+  // Stop listening and process answer
+const stopListening = (finalTranscript) => {
+  addDebugMessage("stopListening called...");
+  
+  // Cancel any ongoing speech synthesis
+  if (speechSynthesis.speaking) {
+    addDebugMessage("Cancelling current speech synthesis");
+    speechSynthesis.cancel();
+    setAvatarSpeaking(false);
+  }
+
+  // Clear timeouts
+  if (silenceTimeoutRef.current) {
+    clearTimeout(silenceTimeoutRef.current);
+    silenceTimeoutRef.current = null;
+  }
+  
+  if (maxListeningTimeoutRef.current) {
+    clearTimeout(maxListeningTimeoutRef.current);
+    maxListeningTimeoutRef.current = null;
+  }
+  
+  // Stop recognition
+  if (recognitionRef.current) {
+    try {
+        if(isListening) { // Only stop if it thinks it's listening
+            recognitionRef.current.stop();
+            addDebugMessage("Recognition stopped via stopListening.");
+        }
+    } catch (e) {
+      addDebugMessage(`Error stopping recognition in stopListening: ${e.message}`);
+    }
+  }
+  
+  setIsListening(false); // Crucial to set this, affects onend logic
+  
+  // Save answer regardless of content
+  const answer = finalTranscript || transcript || "No response provided"; // Use passed finalTranscript first
+  addDebugMessage(`Final answer for Q${currentQuestionIndex + 1}: "${answer.substring(0, 30)}..."`);
+  
+  const currentQ = questions[currentQuestionIndex] || "Question not found"; // Safegaurd
+  const newResponse = {
+    question: currentQ,
+    answer: answer,
+    timestamp: new Date().toISOString()
+  };
+  
+  setResponses(prev => [...prev, newResponse]);
+
+  // Update last advancement time (if needed for other logic)
+  // setLastAdvancementTime(Date.now());
+  
+  // Check if this was the last question
+  if (currentQuestionIndex >= questions.length - 1) { // Use >= to be safe
+    // If it was the last question, finish the interview
+    finishInterview();
+  } else {
+    // Otherwise move to next question
+    askNextQuestion();
+  }
+};
+
+  // Forced advancement for next question (This function might be redundant if stopListening directly calls askNextQuestion)
+  const forceNextQuestion = async () => {
+    addDebugMessage("🔴 FORCED ADVANCEMENT: Using manual next question path");
+    setTranscript(''); // Clear transcript
+    // Reset forced advancement flag after a delay (if this state is used elsewhere)
+    // setTimeout(() => {
+    //   setForcedAdvancementActive(false);
+    // }, 5000);
+    
+    // Update last advancement time (if state is used)
+    // setLastAdvancementTime(Date.now());
+    
+    // This logic is largely duplicated in askNextQuestion / stopListening.
+    // Consider removing this function and relying on stopListening.
+    // For minimal changes, keeping it but noting redundancy.
+    
+    const nextIndex = currentQuestionIndex + 1;
+    
+    if (nextIndex < questions.length) {
+      addDebugMessage(`Moving to question ${nextIndex + 1} (FORCED)`);
+      setCurrentQuestionIndex(nextIndex);
+      
+      const nextQuestion = questions[nextIndex];
+      addDebugMessage(`Speaking question ${nextIndex + 1}: "${nextQuestion}" (FORCED)`);
+      
+      await sendTextDirectly(nextQuestion, "repeat");
+      addDebugMessage("✅ Next question spoken successfully (FORCED)");
+      
+      startListening();
+    } else {
+      addDebugMessage("All questions completed! (FORCED PATH)");
+      await finishInterview();
+    }
+  };
+
+  // Ask next question (manual transition)
+  const askNextQuestion = async () => { // This is typically called from stopListening now
+    addDebugMessage("askNextQuestion called");
+    
+    // Update last advancement time (if state is used)
+    // setLastAdvancementTime(Date.now());
+    setTranscript(''); // Clear transcript for new question
+    const nextIndex = currentQuestionIndex + 1;
+    
+    if (nextIndex < questions.length) {
+      addDebugMessage(`Moving to question ${nextIndex + 1} (from askNextQuestion)`);
+      setCurrentQuestionIndex(nextIndex);
+      
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        setAvatarSpeaking(false);
+        await sleep(100); // Small delay
+      }
+      
+      await askQuestion(nextIndex); // This will speak and then startListening
+    } else {
+      addDebugMessage("All questions completed! (from askNextQuestion)");
+      await finishInterview();
+    }
+  };
+
+  // Send text to avatar - direct, bypassing queue
+  const sendTextDirectly = async (text, taskType = "repeat") => {
+    addDebugMessage(`Sending text directly: "${text.substring(0,50)}..." (${taskType})`);
+    setAvatarSpeaking(true);
+    
+    // Abort previous speech if any, to prevent overlaps
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+    // const abortController = new AbortController(); // This was for a specific utterance, but global cancel is simpler
+    // const signal = abortController.signal; 
+  
+    return new Promise(async (resolve) => { // Added async for await sleep if needed
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+  
+      // if (signal.aborted) { // Not using per-utterance signal anymore
+      //   setAvatarSpeaking(false);
+      //   resolve(false);
+      //   return;
+      // }
+  
+      utterance.onend = () => {
+        // if (signal.aborted) return; // Not using per-utterance signal
+        addDebugMessage("✅ Text spoken successfully");
+        setAvatarSpeaking(false);
+        resolve(true);
+      };
+      
+      utterance.onerror = (event) => {
+        // if (signal.aborted) return; // Not using per-utterance signal
+        addDebugMessage(`Error in speech synthesis: ${event.error}`);
+        setAvatarSpeaking(false);
+        resolve(false); // Resolve false instead of rejecting to allow flow to continue
+      };
+  
+      // utterance._abortController = abortController; // Not using per-utterance signal
+  
+      speechSynthesis.speak(utterance);
+  
+      // signal.addEventListener('abort', () => { // Not using per-utterance signal
+      //   speechSynthesis.cancel(); // This would cancel ALL speech, which is fine
+      //   setAvatarSpeaking(false);
+      //   resolve(false); 
+      // });
+    });
+  };
+
+  // Finish the interview
+  const finishInterview = async () => {
+    addDebugMessage("Interview complete!");
+    setInterviewComplete(true);
+    // Ensure currentQuestionIndex reflects completion, e.g., questions.length
+    if(currentQuestionIndex < questions.length) setCurrentQuestionIndex(questions.length);
+
+    const durationInMinutes = interviewStartTime 
+    ? Math.round((Date.now() - interviewStartTime) / (1000 * 60))
+    : null;
+
+    // Ensure speech recognition is stopped
+    if (isListening && recognitionRef.current) {
+        addDebugMessage("Stopping active listening at finishInterview.");
+        recognitionRef.current.stop();
+        setIsListening(false);
+    }
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        setAvatarSpeaking(false);
+    }
+
+    const finalResponses = [...responses]; // Current responses should be complete
+    
+    // This logic might be redundant if stopListening captures the final transcript properly
+    if (isListening && transcript && questions[currentQuestionIndex-1]) { // If it was listening AND transcript exists AND there was a previous question
+      const lastQuestion = questions[currentQuestionIndex-1]; // Use index-1 as currentQuestionIndex might be questions.length
+      finalResponses.push({
+        question: lastQuestion,
+        answer: transcript,
+        timestamp: new Date().toISOString()
+      });
+      addDebugMessage(`Added final response from active transcript: Q: ${lastQuestion.substring(0, 30)}... A: ${transcript.substring(0, 30)}...`);
+    }
+  
+    console.log("All responses for submission:", finalResponses);
+    
+    const finalData = {
+      candidate_id: candidateCode,
+      job_id: jobId,
+      qa_list: finalResponses,
+      ai_duration: durationInMinutes
+    };
+    
+    console.log("Complete interview data for API:", JSON.stringify(finalData, null, 2));
+  
+    if (proctoringEnabled) {
+      await stopProctoring(); // This also calls saveProctoringReport
+    }
+  
+    await sendTextDirectly("Thank you for completing the interview. Please provide your feedback.", "repeat");
+  
+    setShowFeedbackForm(true);
+  
+    try {
+      addDebugMessage("Sending interview data to evaluation API...");
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/v1/evaluator/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalData), // No need for null, 2 for API usually
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      // const result = await response.json(); // Original had this
+      await response.json(); // Consume to prevent issues
+      addDebugMessage("✅ Interview data successfully sent to evaluation API.");
+      // console.log("Evaluation API response:", result);
+      
+    } catch (error) {
+      addDebugMessage(`❌ Error sending interview data to evaluation API: ${error.message}`);
+      console.error("Error sending to evaluation API:", error);
+      
+      localStorage.setItem(`interview_data_${candidateCode}_${Date.now()}`, JSON.stringify(finalData));
+      addDebugMessage("Interview data saved to localStorage as fallback");
+    }
+  };
+
+  const handleFeedbackSubmit = () => {
+    setShowFeedbackForm(false);
+    setShowThankYou(true);
+  };
+
+  // Start interview button handler
+  const startInterviewButton = () => {
+    if (!isApiSuccess && questions.length === 0) { // Check if questions are available OR API was successful
+        showError("Questions are not loaded. Please wait or retry.");
+        return;
+    }
+    setNeedsUserInteraction(false);
+    setLoading(true); // Indicate session initialization is in progress
+    (async () => {
+      try {
+        addDebugMessage("User clicked Start Interview button");
+        await initializeSession(); // This will get permissions then call startInterview
+        // setLoading(false) should be handled by initializeSession's finally block
+      } catch (err) {
+        addDebugMessage(`Error during initialization from button click: ${err.message}`);
+        showError(`Failed to start interview: ${err.message}`);
+        setLoading(false); // Ensure loading is false on error
+        setNeedsUserInteraction(true); // Revert to start screen
+      }
+    })();
+  };
+
+  // Retry initialization
+  const retryInitialization = async () => {
+    addDebugMessage("Retrying initialization...");
+    resetError();
+    setLoading(true); // Show loading state
+    setDebugMessages([]); // Clear debug messages for new attempt
+    
+    // Reset key states
+    setIsApiSuccess(false); // Allow fetchQuestions to run again
+    questionsLoadingRef.current = false; // Allow fetchQuestions to run again
+    setQuestions([]); // Clear old questions
+    
+    setInterviewStartTime(null);
+    setCurrentQuestionIndex(0);
+    setIsListening(false);
+    setResponses([]);
+    setTranscript('');
+    setInterviewComplete(false);
+    setAvatarSpeaking(false);
+    
+    // Clear any existing connections and abort ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+    if (maxListeningTimeoutRef.current) clearTimeout(maxListeningTimeoutRef.current);
+    if (isSpeakingIntervalRef.current) clearInterval(isSpeakingIntervalRef.current); // Though not used in current simplified logic
+    
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) { /* ignore */ } // Use abort
+      recognitionRef.current = null;
+    }
+    
+    if (roomRef.current) { // Though LiveKit room is not actively used
+      roomRef.current.disconnect();
+      roomRef.current = null;
+    }
+    
+    if (mediaElementRef.current && mediaElementRef.current.srcObject) {
+      const stream = mediaElementRef.current.srcObject;
+      if (stream && typeof stream.getTracks === 'function') {
+          stream.getTracks().forEach(track => track.stop());
+      }
+      mediaElementRef.current.srcObject = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    
+    if (proctoringEnabled) { // Stop and clean up proctoring resources
+      await stopProctoring(); 
+      // Re-init proctoring services as part of initializeSession if needed
+      faceDetectionServiceRef.current = null;
+      tabMonitoringServiceRef.current = null;
+      proctoringServiceRef.current = null;
+    }
+    
+    sessionInfoRef.current = null;
+    // sessionTokenRef.current = null; // Not used
+    // textQueueRef.current = []; // Not used
+    // isProcessingRef.current = false; // Not used
+    
+    // Start fresh: fetch questions, then user clicks "Start Interview" which calls initializeSession
+    // The useEffect for fetchQuestions will re-trigger.
+    // ProctoredInterviewPage will show loading for questions.
+    setNeedsUserInteraction(true); // Ensure user is back on the start page
+    setLoading(false); // Stop the main loading, let ProctoredInterviewPage handle its question loading
+  };
+
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      addDebugMessage("HeyGenStreaming component unmounting - FINAL CLEANUP");
+      // Clean up resources when component unmounts
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort(); // Use abort for a more forceful stop
+        } catch (error) {
+          console.error("Error stopping recognition on unmount:", error);
+        }
+        recognitionRef.current = null;
+      }
+      
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+      }
+
+      if (roomRef.current) { // Though LiveKit room not actively used
+        roomRef.current.disconnect();
+        roomRef.current = null;
+      }
+      
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+       if (mediaElementRef.current && mediaElementRef.current.srcObject) {
+          const stream = mediaElementRef.current.srcObject;
+          if (stream && typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => track.stop());
+          }
+          mediaElementRef.current.srcObject = null;
+      }
+      
+      if (faceDetectionIntervalRef.current) clearInterval(faceDetectionIntervalRef.current);
+      if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
+      
+      if (tabMonitoringServiceRef.current) {
+        tabMonitoringServiceRef.current.destroy();
+        tabMonitoringServiceRef.current = null;
+      }
+      // Potentially destroy other service refs if they have destroy methods
+      if (faceDetectionServiceRef.current && typeof faceDetectionServiceRef.current.destroy === 'function') faceDetectionServiceRef.current.destroy();
+      if (proctoringServiceRef.current && typeof proctoringServiceRef.current.destroy === 'function') proctoringServiceRef.current.destroy();
+
+
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+      if (maxListeningTimeoutRef.current) clearTimeout(maxListeningTimeoutRef.current);
+
+      addDebugMessage("Unmount cleanup complete.");
+    };
+  }, []); // Empty dependency array for mount/unmount effect
+
+  // Styles for UI elements
+
+
+  return (
+    <div className="containerAI">
+        {showFeedbackForm && (
+            <div className="feedback-popup-overlay">
+              <FeedbackPopup 
+                onClose={handleFeedbackSubmit} 
+                job_id={jobId} 
+                candidate_id={candidateCode}
+              />
+            </div>
+          )}
+          {showThankYou && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+              backgroundColor: '#020817', display: 'flex', justifyContent: 'center',
+              alignItems: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box'
+            }}>
+              <div style={{ color: 'white', fontSize: '2rem', textAlign: 'center' }}>
+                Thank you for completing the interview. Your responses have been recorded. You may now close this window.
+              </div>
+            </div>
+          )}
+        {needsUserInteraction && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            backgroundColor: '#020817', zIndex: 50
+          }}>
+          <ProctoredInterviewPage 
+            startInterviewButton={startInterviewButton} 
+            isApiSuccess={isApiSuccess && questions.length > 0}
+            isLoading={questionsLoading} // This is for question fetching specifically
+            error={apiError} // API error from question fetching
+            onRetry={retryInitialization} // Retry now handles full re-init including question fetch
+          />
+          </div>
+        )}
+      
+      <video
+        ref={mediaElementRef}
+        className="video"
+        autoPlay
+        playsInline
+        muted={true} // <<< ECHO FIX APPLIED HERE
+      />
+
+      {showDebug && proctoringCanvasRef && ( // Ensure proctoringCanvasRef itself exists if used in style
+          <canvas 
+            ref={proctoringCanvasRef}
+            style={{
+              position: 'absolute', top: '80px', right: '10px', width: '160px',
+              height: '120px', border: '1px solid #444',
+              display: showDebug ? 'block' : 'none', // Controlled by showDebug
+              zIndex: 35, objectFit: 'cover'
+            }}
+          />
+      )}
+      
+      {/* Current question display - only when not in needsUserInteraction and not globally loading */}
+      {!needsUserInteraction && !loading && !error && (
+          <div className="questionBubble">
+              <div className="questionText">
+              {interviewComplete ? "Thank you for completing the interview. Please provide your feedback."
+                : ( !showThankYou && currentQuestionIndex < questions.length && questions.length > 0 && questions[currentQuestionIndex]
+                    || (questionsLoading ? "Loading questions..." : "Waiting for interview to start...") // Fallback text
+                  )}
+              </div>
+
+              <div style={{display:"flex", gap:"20px", justifyContent:"center", alignItems:"end", marginTop: "15px"}}>
+              {!loading && !error && avatarSpeaking && (
+                <div className="button">
+                  <div style={{display:"flex", gap:"5px", justifyContent:"center", alignItems: "center"}}>
+                    <img src={Speaking} alt="Speaking Icon" className='micIconAI'/>
+                    <div>Speaking</div>
+                  </div>
+                </div>
+              )}
+                {!loading && !error && isListening && (
+                    <div className="button">
+                      <div style={{display:"flex", gap:"5px", justifyContent:"center", alignItems: "center"}}>
+                      <img src={ListeningIcon} alt="Listening Icon" className='micIconAI'/>
+                      <div>Listening</div>
+                    </div>
+                    </div>
+                  )}
+                {!loading && !error && !interviewComplete && !avatarSpeaking && currentQuestionIndex < questions.length && questions.length > 0 && ( // Show button if not avatar speaking
+                  <div>
+                    {(() => {
+                      if (currentQuestionIndex === questions.length - 1) { // If it's the last question
+                        return <button className="button" onClick={() => stopListening(transcript)}>Finish Interview</button>;
+                      } else {
+                        return <button className="button" onClick={() => stopListening(transcript)}>Next Question</button>;
+                      }
+                    })()}
+                  </div>
+                )}
+            </div>
+            <div className="ai-container"> {/* Original AI animation structure */}
+              <div className="ai-animation">
+                  <div className="pulse"></div>
+                  <div className="inner-circle">
+                      <div className="wave"></div>
+                      <div className="equalizer">
+                          <div className="bar"></div> <div className="bar"></div> <div className="bar"></div>
+                          <div className="bar"></div> <div className="bar"></div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+            {!loading && !error && transcript && (
+            <div className='transcriptPanelParent'>
+                <button 
+                  className="TranscriptButton" 
+                  onClick={() => setShowTranscript(!showTranscript)}
+                >
+                  {showTranscript ? '- Hide Transcript' : '+ Show Transcript'}
+                </button>
+              {showTranscript && (
+                <div className="transcriptPanel">
+                  {transcript}
+                </div>
+              )}
+            </div>
+            )}
+          </div>
+      )}
+      
+      {/* Proctoring violations panel */}
+      {showDebug && showProctoringInfo && (
+        <div style={{
+          position: 'absolute', bottom: '220px', right: '10px', width: '300px',
+          maxHeight: '200px', overflowY: 'auto', backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: '#ffffff', padding: '10px', borderRadius: '5px', fontSize: '12px',
+          fontFamily: 'monospace', zIndex: 21
+        }}>
+          <div style={{marginBottom: '10px', fontWeight: 'bold'}}>Proctoring Stats:</div>
+          <div>Face Violations: {proctoringStats.faceViolations}</div>
+          <div>Gaze Violations: {proctoringStats.gazeViolations}</div>
+          <div>Tab Violations: {proctoringStats.tabViolations}</div>
+          <div>Total Violations: {proctoringStats.totalViolations}</div>
+          <div>Captures: {proctoringStats.captures}</div>
+          <div>Last Capture: {proctoringStatus.lastCapture ? new Date(proctoringStatus.lastCapture).toLocaleTimeString() : 'None'}</div>
+        </div>
+      )}
+      
+      {/* Error panel */}
+      {error && (
+        <div className="errorPanel">
+          <h2 style={{ fontSize: '22px', marginBottom: '15px' }}>Connection Error</h2>
+          <p>{error}</p>
+          <button 
+            style={{
+              marginTop: '15px', padding: '10px 20px', backgroundColor: 'rgb(0, 153, 37)',
+              color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer'
+            }} 
+            onClick={retryInitialization}
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+      
+      {/* Debug panel */}
+      {showDebug && (
+        <div className="debugPanel" style={{ /* Added inline style for better visibility if CSS is missing */
+            position: 'fixed', bottom: '10px', left: '10px', width: 'calc(100% - 20px)',
+            maxHeight: '200px', overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.8)',
+            color: 'lime', padding: '10px', borderRadius: '5px', fontSize: '10px',
+            fontFamily: 'monospace', zIndex: 100
+        }}>
+          <div style={{marginBottom: '10px', fontWeight: 'bold'}}>Debug Messages: (Oldest at top)</div>
+          {debugMessages.map((msg, index) => (
+            <div key={index}>{msg}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HeyGenStreaming;
